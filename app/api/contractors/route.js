@@ -1,63 +1,52 @@
-import Anthropic from "@anthropic-ai/sdk";
-
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+async function getPlaceDetails(placeId) {
+  const fields = "name,formatted_phone_number,website,rating,user_ratings_total,formatted_address,editorial_summary";
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.result || {};
+}
 
 export async function POST(request) {
   const { city, trade } = await request.json();
-  const label = trade === "Carpenters" ? "carpenters/general contractors" : trade.toLowerCase();
-
-  const prompt = `Search the web and find exactly 15 ${label} based in or near ${city}. For each provide: name, phone (or "N/A"), website (or "N/A"), and a 2-sentence summary of their specialties and reputation.
-
-Respond ONLY with valid JSON, no markdown, no explanation:
-{"contractors":[{"name":"...","phone":"...","website":"...","notes":"..."}]}`;
+  const query = `${trade.toLowerCase()} in ${city}`;
 
   try {
-    const messages = [{ role: "user", content: prompt }];
-    let finalText = "";
+    // Step 1: Text search to get up to 15 places
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
 
-    for (let i = 0; i < 8; i++) {
-      const response = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
-        messages,
-      });
-
-      // Collect any text from this response
-      const textBlocks = response.content.filter(b => b.type === "text");
-      if (textBlocks.length > 0) {
-        finalText = textBlocks.map(b => b.text).join("");
-      }
-
-      // If done, break
-      if (response.stop_reason === "end_turn") break;
-
-      // If tool use, feed results back
-      if (response.stop_reason === "tool_use") {
-        const toolUseBlocks = response.content.filter(b => b.type === "tool_use");
-        messages.push({ role: "assistant", content: response.content });
-        messages.push({
-          role: "user",
-          content: toolUseBlocks.map(b => ({
-            type: "tool_result",
-            tool_use_id: b.id,
-            content: typeof b.content === "string" ? b.content : JSON.stringify(b.content || ""),
-          })),
-        });
-      } else {
-        break;
-      }
+    if (!searchData.results || searchData.results.length === 0) {
+      return Response.json({ contractors: [] });
     }
 
-    const match = finalText.match(/\{[\s\S]*\}/);
-    if (!match) return Response.json({ contractors: [] });
+    // Step 2: Get details for each place (up to 15)
+    const places = searchData.results.slice(0, 15);
+    const detailsPromises = places.map(p => getPlaceDetails(p.place_id));
+    const details = await Promise.all(detailsPromises);
 
-    const parsed = JSON.parse(match[0]);
-    return Response.json({ contractors: parsed.contractors || [] });
+    // Step 3: Format into contractor cards
+    const contractors = details.map(d => {
+      const rating = d.rating ? `⭐ ${d.rating}/5 (${d.user_ratings_total || 0} reviews)` : null;
+      const summary = d.editorial_summary?.overview || null;
+      const notes = [
+        summary,
+        rating,
+        d.formatted_address ? `Located at ${d.formatted_address}.` : null,
+      ].filter(Boolean).join(" ") || "Local contractor serving the area.";
 
+      return {
+        name: d.name || "Unknown",
+        phone: d.formatted_phone_number || "N/A",
+        website: d.website || "N/A",
+        notes,
+      };
+    });
+
+    return Response.json({ contractors });
   } catch (err) {
     console.error("Error:", err);
     return Response.json({ contractors: [], error: err.message });
