@@ -32,22 +32,21 @@ export default function TradeFind() {
     setGlobalError(null);
     setActiveTrade("Plumbers");
     setSearchedCity(city.trim());
-    setProgress({ Plumbers: "loading", Electricians: "loading", Carpenters: "loading" });
+    setProgress({ Plumbers: "loading", Electricians: "waiting", Carpenters: "waiting" });
 
     const out = {};
     try {
-      await Promise.all(
-        TRADES.map(async (trade) => {
-          try {
-            const contractors = await fetchTrade(city.trim(), trade);
-            out[trade] = contractors;
-            setProgress(p => ({ ...p, [trade]: "done" }));
-          } catch {
-            out[trade] = [];
-            setProgress(p => ({ ...p, [trade]: "error" }));
-          }
-        })
-      );
+      for (const trade of TRADES) {
+        setProgress(p => ({ ...p, [trade]: "loading" }));
+        try {
+          const contractors = await fetchTrade(city.trim(), trade);
+          out[trade] = contractors;
+          setProgress(p => ({ ...p, [trade]: "done" }));
+        } catch {
+          out[trade] = [];
+          setProgress(p => ({ ...p, [trade]: "error" }));
+        }
+      }
       const total = Object.values(out).reduce((a, v) => a + v.length, 0);
       if (total === 0) setGlobalError("No results returned. Try a different city name.");
       else setResults(out);
@@ -75,7 +74,7 @@ export default function TradeFind() {
       {/* Header */}
       <div style={{ background: "linear-gradient(135deg,#1a1a1a,#0d0d0d)", borderBottom: "1px solid #222", padding: "40px 24px 36px", textAlign: "center" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.35em", color: "#444", textTransform: "uppercase", marginBottom: 10 }}>Construction Contractor Intelligence</div>
-        <h1 style={{ fontSize: "clamp(30px,5vw,54px)", fontWeight: "bold", color: "#fff", letterSpacing: "-0.02em", marginBottom: 6, margin: "0 0 6px" }}>TradeFind</h1>
+        <h1 style={{ fontSize: "clamp(30px,5vw,54px)", fontWeight: "bold", color: "#fff", letterSpacing: "-0.02em", margin: "0 0 6px" }}>TradeFind</h1>
         <p style={{ color: "#555", fontSize: 14, marginBottom: 28 }}>Source plumbers, electricians & carpenters in any city</p>
         <div style={{ display: "flex", gap: 10, maxWidth: 500, margin: "0 auto" }}>
           <input
@@ -101,7 +100,7 @@ export default function TradeFind() {
           <div style={{ textAlign: "center", padding: "60px 24px" }}>
             <div style={{ width: 40, height: 40, border: "3px solid #222", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.75s linear infinite", margin: "0 auto 18px" }} />
             <p style={{ color: "#666", fontSize: 15 }}>Searching for contractors in {searchedCity}...</p>
-            <p style={{ color: "#444", fontSize: 13, marginTop: 6 }}>All 3 trades running in parallel — usually 15–25 seconds</p>
+            <p style={{ color: "#444", fontSize: 13, marginTop: 6 }}>Searching each trade one at a time — usually 45–60 seconds</p>
             <div style={{ display: "flex", gap: 20, maxWidth: 420, margin: "24px auto 0" }}>
               {TRADES.map(t => (
                 <div key={t} style={{ flex: 1, textAlign: "center" }}>
@@ -110,13 +109,16 @@ export default function TradeFind() {
                   </div>
                   <div style={{ height: 3, background: "#1e1e1e", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
-                      height: "100%", width: progress[t] === "done" || progress[t] === "error" ? "100%" : "70%",
-                      background: progress[t] === "error" ? "#f44336" : ACCENT[t], borderRadius: 2,
-                      transition: "width 0.4s", animation: progress[t] === "loading" ? "pulse 1.5s infinite" : "none"
+                      height: "100%",
+                      width: progress[t] === "done" || progress[t] === "error" ? "100%" : progress[t] === "loading" ? "70%" : "0%",
+                      background: progress[t] === "error" ? "#f44336" : ACCENT[t],
+                      borderRadius: 2,
+                      transition: "width 0.4s",
+                      animation: progress[t] === "loading" ? "pulse 1.5s infinite" : "none"
                     }} />
                   </div>
-                  <div style={{ fontSize: 11, marginTop: 5, color: progress[t] === "done" ? "#4caf50" : progress[t] === "error" ? "#f44336" : "#555" }}>
-                    {progress[t] === "done" ? "✓ Done" : progress[t] === "error" ? "⚠ Failed" : "Searching..."}
+                  <div style={{ fontSize: 11, marginTop: 5, color: progress[t] === "done" ? "#4caf50" : progress[t] === "error" ? "#f44336" : progress[t] === "loading" ? "#888" : "#333" }}>
+                    {progress[t] === "done" ? "✓ Done" : progress[t] === "error" ? "⚠ Failed" : progress[t] === "loading" ? "Searching..." : "Waiting..."}
                   </div>
                 </div>
               ))}
