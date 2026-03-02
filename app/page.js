@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 
-const TRADES = ["Plumbers", "Electricians", "Carpenters"];
-const ICONS = { Plumbers: "🔧", Electricians: "⚡", Carpenters: "🪚" };
-const ACCENT = { Plumbers: "#2196F3", Electricians: "#FFC107", Carpenters: "#FF7043" };
-const ACTIVE_TEXT = { Plumbers: "#fff", Electricians: "#000", Carpenters: "#fff" };
+const TRADES = ["Plumbers", "Electricians", "General Contractors"];
+const ICONS = { Plumbers: "🔧", Electricians: "⚡", "General Contractors": "🪚" };
+const ACCENT = { Plumbers: "#2196F3", Electricians: "#FFC107", "General Contractors": "#FF7043" };
+const ACTIVE_TEXT = { Plumbers: "#fff", Electricians: "#000", "General Contractors": "#fff" };
 
 async function fetchTrade(city, trade) {
   const res = await fetch("/api/contractors", {
@@ -32,7 +32,7 @@ export default function TradeFind() {
     setGlobalError(null);
     setActiveTrade("Plumbers");
     setSearchedCity(city.trim());
-    setProgress({ Plumbers: "loading", Electricians: "waiting", Carpenters: "waiting" });
+    setProgress({ Plumbers: "loading", Electricians: "waiting", "General Contractors": "waiting" });
 
     const out = {};
     try {
@@ -71,11 +71,10 @@ export default function TradeFind() {
         .card:hover { transform:translateY(-2px); }
       `}</style>
 
-      {/* Header */}
       <div style={{ background: "linear-gradient(135deg,#1a1a1a,#0d0d0d)", borderBottom: "1px solid #222", padding: "40px 24px 36px", textAlign: "center" }}>
         <div style={{ fontSize: 11, letterSpacing: "0.35em", color: "#444", textTransform: "uppercase", marginBottom: 10 }}>Construction Contractor Intelligence</div>
         <h1 style={{ fontSize: "clamp(30px,5vw,54px)", fontWeight: "bold", color: "#fff", letterSpacing: "-0.02em", margin: "0 0 6px" }}>TradeFind</h1>
-        <p style={{ color: "#555", fontSize: 14, marginBottom: 28 }}>Source plumbers, electricians & carpenters in any city</p>
+        <p style={{ color: "#555", fontSize: 14, marginBottom: 28 }}>Source plumbers, electricians & general contractors in any city</p>
         <div style={{ display: "flex", gap: 10, maxWidth: 500, margin: "0 auto" }}>
           <input
             value={city}
@@ -94,26 +93,23 @@ export default function TradeFind() {
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 20px" }}>
-
-        {/* Loading */}
         {loading && (
           <div style={{ textAlign: "center", padding: "60px 24px" }}>
             <div style={{ width: 40, height: 40, border: "3px solid #222", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.75s linear infinite", margin: "0 auto 18px" }} />
             <p style={{ color: "#666", fontSize: 15 }}>Searching for contractors in {searchedCity}...</p>
-            <p style={{ color: "#444", fontSize: 13, marginTop: 6 }}>Searching each trade one at a time — usually 45–60 seconds</p>
+            <p style={{ color: "#444", fontSize: 13, marginTop: 6 }}>Searching each trade one at a time — usually 15–30 seconds</p>
             <div style={{ display: "flex", gap: 20, maxWidth: 420, margin: "24px auto 0" }}>
               {TRADES.map(t => (
                 <div key={t} style={{ flex: 1, textAlign: "center" }}>
                   <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: progress[t] === "done" ? ACCENT[t] : "#555", marginBottom: 6 }}>
-                    {ICONS[t]} {t}
+                    {ICONS[t]} {t.split(" ")[0]}
                   </div>
                   <div style={{ height: 3, background: "#1e1e1e", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
                       height: "100%",
                       width: progress[t] === "done" || progress[t] === "error" ? "100%" : progress[t] === "loading" ? "70%" : "0%",
                       background: progress[t] === "error" ? "#f44336" : ACCENT[t],
-                      borderRadius: 2,
-                      transition: "width 0.4s",
+                      borderRadius: 2, transition: "width 0.4s",
                       animation: progress[t] === "loading" ? "pulse 1.5s infinite" : "none"
                     }} />
                   </div>
@@ -126,14 +122,12 @@ export default function TradeFind() {
           </div>
         )}
 
-        {/* Error */}
         {globalError && !loading && (
           <div style={{ background: "#1a0a0a", border: "1px solid #5a1a1a", borderRadius: 8, padding: "16px 20px", color: "#ff6b6b", fontSize: 14 }}>
             ⚠️ {globalError}
           </div>
         )}
 
-        {/* Results */}
         {results && !loading && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
@@ -185,7 +179,7 @@ export default function TradeFind() {
           <div style={{ textAlign: "center", padding: "90px 24px" }}>
             <div style={{ fontSize: 60, marginBottom: 18 }}>🏗️</div>
             <p style={{ fontSize: 16, color: "#444" }}>Enter a city above to find local contractors</p>
-            <p style={{ fontSize: 13, color: "#333", marginTop: 8 }}>Powered by live web search — results reflect real businesses</p>
+            <p style={{ fontSize: 13, color: "#333", marginTop: 8 }}>Powered by Google Places — real businesses, real data</p>
           </div>
         )}
       </div>
