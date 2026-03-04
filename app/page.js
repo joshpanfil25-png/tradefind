@@ -97,7 +97,7 @@ export default function TradeFind() {
           <div style={{ textAlign: "center", padding: "60px 24px" }}>
             <div style={{ width: 40, height: 40, border: "3px solid #222", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.75s linear infinite", margin: "0 auto 18px" }} />
             <p style={{ color: "#666", fontSize: 15 }}>Searching for contractors in {searchedCity}...</p>
-            <p style={{ color: "#444", fontSize: 13, marginTop: 6 }}>Searching each trade one at a time — usually 15–30 seconds</p>
+            <p style={{ color: "#444", fontSize: 13, marginTop: 6 }}>Fetching details & emails — usually 20–40 seconds</p>
             <div style={{ display: "flex", gap: 20, maxWidth: 420, margin: "24px auto 0" }}>
               {TRADES.map(t => (
                 <div key={t} style={{ flex: 1, textAlign: "center" }}>
@@ -165,6 +165,7 @@ export default function TradeFind() {
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 10, paddingRight: 32, lineHeight: 1.35 }}>{c.name}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
                     {c.phone && c.phone !== "N/A" && <span style={{ fontSize: 12, color: "#888" }}>📞 {c.phone}</span>}
+                    {c.email && c.email !== "N/A" && <span style={{ fontSize: 12, color: "#4caf50" }}>✉️ {c.email}</span>}
                     {c.website && c.website !== "N/A" && <span style={{ fontSize: 12, color: ACCENT[activeTrade] }}>{c.website.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]}</span>}
                   </div>
                   <div style={{ height: 1, background: "#222", marginBottom: 12 }} />
@@ -179,7 +180,7 @@ export default function TradeFind() {
           <div style={{ textAlign: "center", padding: "90px 24px" }}>
             <div style={{ fontSize: 60, marginBottom: 18 }}>🏗️</div>
             <p style={{ fontSize: 16, color: "#444" }}>Enter a city above to find local contractors</p>
-            <p style={{ fontSize: 13, color: "#333", marginTop: 8 }}>Powered by Google Places — real businesses, real data</p>
+            <p style={{ fontSize: 13, color: "#333", marginTop: 8 }}>Powered by Google Places — names, phones, websites & emails</p>
           </div>
         )}
       </div>
